@@ -1,65 +1,162 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+
+type Choice = "rock" | "paper" | "scissors";
+type Result = "win" | "lose" | "draw" | null;
+
+const CHOICES: { value: Choice; label: string; emoji: string }[] = [
+  { value: "rock", label: "グー", emoji: "✊" },
+  { value: "paper", label: "パー", emoji: "✋" },
+  { value: "scissors", label: "チョキ", emoji: "✌️" },
+];
+
+function getResult(player: Choice, cpu: Choice): Result {
+  if (player === cpu) return "draw";
+  if (
+    (player === "rock" && cpu === "scissors") ||
+    (player === "paper" && cpu === "rock") ||
+    (player === "scissors" && cpu === "paper")
+  )
+    return "win";
+  return "lose";
+}
+
+function getCpuChoice(): Choice {
+  const choices: Choice[] = ["rock", "paper", "scissors"];
+  return choices[Math.floor(Math.random() * 3)];
+}
+
+const RESULT_TEXT: Record<NonNullable<Result>, string> = {
+  win: "あなたの勝ち！🎉",
+  lose: "CPUの勝ち...😢",
+  draw: "引き分け！🤝",
+};
+
+const RESULT_COLOR: Record<NonNullable<Result>, string> = {
+  win: "text-green-400",
+  lose: "text-red-400",
+  draw: "text-yellow-400",
+};
 
 export default function Home() {
+  const [playerChoice, setPlayerChoice] = useState<Choice | null>(null);
+  const [cpuChoice, setCpuChoice] = useState<Choice | null>(null);
+  const [result, setResult] = useState<Result>(null);
+  const [score, setScore] = useState({ win: 0, lose: 0, draw: 0 });
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const play = (choice: Choice) => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setPlayerChoice(choice);
+    setCpuChoice(null);
+    setResult(null);
+
+    setTimeout(() => {
+      const cpu = getCpuChoice();
+      const res = getResult(choice, cpu);
+      setCpuChoice(cpu);
+      setResult(res);
+      setScore((prev) => ({ ...prev, [res]: prev[res] + 1 }));
+      setIsAnimating(false);
+    }, 600);
+  };
+
+  const reset = () => {
+    setPlayerChoice(null);
+    setCpuChoice(null);
+    setResult(null);
+    setScore({ win: 0, lose: 0, draw: 0 });
+  };
+
+  const choiceEmoji = (c: Choice | null) =>
+    c ? CHOICES.find((x) => x.value === c)?.emoji : "❓";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex flex-col items-center justify-center p-4">
+      <h1 className="text-4xl font-bold text-white mb-2">✂️ じゃんけん</h1>
+      <p className="text-purple-300 mb-8 text-sm">CPUと勝負しよう！</p>
+
+      {/* スコア */}
+      <div className="flex gap-6 mb-10">
+        {[
+          { label: "勝ち", key: "win", color: "text-green-400" },
+          { label: "負け", key: "lose", color: "text-red-400" },
+          { label: "引分", key: "draw", color: "text-yellow-400" },
+        ].map(({ label, key, color }) => (
+          <div key={key} className="text-center">
+            <div className={`text-2xl font-bold ${color}`}>
+              {score[key as keyof typeof score]}
+            </div>
+            <div className="text-xs text-purple-300">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* バトルエリア */}
+      <div className="flex items-center gap-8 mb-10">
+        <div className="text-center">
+          <div
+            className={`text-6xl mb-2 transition-all duration-300 ${
+              isAnimating ? "animate-bounce" : ""
+            }`}
+          >
+            {playerChoice ? choiceEmoji(playerChoice) : "🤔"}
+          </div>
+          <div className="text-purple-300 text-sm">あなた</div>
+        </div>
+
+        <div className="text-white text-2xl font-bold">VS</div>
+
+        <div className="text-center">
+          <div
+            className={`text-6xl mb-2 transition-all duration-300 ${
+              isAnimating ? "animate-bounce" : ""
+            }`}
+          >
+            {isAnimating ? "🔄" : cpuChoice ? choiceEmoji(cpuChoice) : "🤖"}
+          </div>
+          <div className="text-purple-300 text-sm">CPU</div>
+        </div>
+      </div>
+
+      {/* 結果 */}
+      <div className="h-10 mb-8 flex items-center">
+        {result && !isAnimating && (
+          <p
+            className={`text-2xl font-bold ${RESULT_COLOR[result]} animate-pulse`}
+          >
+            {RESULT_TEXT[result]}
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        )}
+        {isAnimating && (
+          <p className="text-white text-xl">じゃーんけーん...</p>
+        )}
+      </div>
+
+      {/* 選択ボタン */}
+      <div className="flex gap-4 mb-6">
+        {CHOICES.map(({ value, label, emoji }) => (
+          <button
+            key={value}
+            onClick={() => play(value)}
+            disabled={isAnimating}
+            className="flex flex-col items-center gap-2 bg-white/10 hover:bg-white/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl px-6 py-4 transition-all duration-150 border border-white/20 hover:border-white/40 cursor-pointer"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <span className="text-4xl">{emoji}</span>
+            <span className="text-sm font-medium">{label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* リセット */}
+      <button
+        onClick={reset}
+        className="text-purple-400 hover:text-white text-sm underline transition-colors cursor-pointer"
+      >
+        スコアをリセット
+      </button>
+    </main>
   );
 }
