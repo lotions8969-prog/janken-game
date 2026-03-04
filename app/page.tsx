@@ -11,7 +11,7 @@ const CHOICES: { value: Choice; label: string; emoji: string }[] = [
   { value: "scissors", label: "チョキ", emoji: "✌️" },
 ];
 
-function getResult(player: Choice, cpu: Choice): Result {
+function getResult(player: Choice, cpu: Choice): NonNullable<Result> {
   if (player === cpu) return "draw";
   if (
     (player === "rock" && cpu === "scissors") ||
@@ -58,7 +58,7 @@ export default function Home() {
       const res = getResult(choice, cpu);
       setCpuChoice(cpu);
       setResult(res);
-      setScore((prev) => ({ ...prev, [res]: prev[res as keyof typeof prev] + 1 }));
+      setScore((prev) => ({ ...prev, [res]: prev[res] + 1 }));
       setIsAnimating(false);
     }, 600);
   };
