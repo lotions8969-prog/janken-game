@@ -58,7 +58,7 @@ export default function Home() {
       const res = getResult(choice, cpu);
       setCpuChoice(cpu);
       setResult(res);
-      setScore((prev) => ({ ...prev, [res]: prev[res] + 1 }));
+      setScore((prev) => ({ ...prev, [res]: prev[res as keyof typeof prev] + 1 }));
       setIsAnimating(false);
     }, 600);
   };
